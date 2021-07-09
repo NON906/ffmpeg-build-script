@@ -410,7 +410,7 @@ fi
 if build "openh264"; then
   download "https://github.com/cisco/openh264/archive/v2.1.1.tar.gz" "openh264-2.1.1.tar.gz"
   execute make -j $MJOBS PREFIX="${WORKSPACE}" 
-  execute make install PREFIX="${WORKSPACE}" 
+  execute make install-static PREFIX="${WORKSPACE}" 
   build_done "openh264"
 fi
 CONFIGURE_OPTIONS+=("--enable-libopenh264")
