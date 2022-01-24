@@ -33,6 +33,7 @@ elif [[ -f /proc/cpuinfo ]]; then
 elif [[ "$OSTYPE" == "darwin"* ]]; then
   MJOBS=$(sysctl -n machdep.cpu.thread_count)
   CONFIGURE_OPTIONS=("--enable-videotoolbox")
+  CONFIGURE_OPTIONS+=("--enable-indev=avfoundation")
 else
   MJOBS=4
 fi
