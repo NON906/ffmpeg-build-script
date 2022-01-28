@@ -401,8 +401,8 @@ if $NONFREE_AND_GPL; then
   execute make -j $MJOBS
   execute make install_sw
   build_done "openssl"
+  CONFIGURE_OPTIONS+=("--enable-openssl")
 fi
-CONFIGURE_OPTIONS+=("--enable-openssl")
 
 if build "cmake" "3.22.0"; then
   download "https://github.com/Kitware/CMake/releases/download/v3.22.0/cmake-3.22.0.tar.gz"
@@ -830,9 +830,8 @@ if $NONFREE_AND_GPL; then
     build_done "srt" "1.4.3"
   fi
 
-  build_done "srt"
+  CONFIGURE_OPTIONS+=("--enable-libsrt")
 fi
-CONFIGURE_OPTIONS+=("--enable-libsrt")
 
 ##
 ## HWaccel library
