@@ -412,6 +412,9 @@ if build "cmake" "3.22.0"; then
   build_done "cmake" "3.22.0"
 fi
 
+originalCFlags=${CFLAGS}
+export CFLAGS="-fPIC ${CFLAGS}"
+
 ##
 ## video library
 ##
@@ -547,6 +550,14 @@ if build "opus" "1.3.1"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libopus")
 
+if build "libogg" "1.3.3"; then
+  download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-1.3.3.tar.gz"
+  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  execute make -j $MJOBS
+  execute make install
+  build_done "libogg" "1.3.3"
+fi
+
 if build "libvorbis" "1.3.6"; then
   download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.6.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest
@@ -617,6 +628,8 @@ fi
 ##
 ## HWaccel library
 ##
+
+export CFLAGS=${originalCFlags}
 
 ##
 ## FFmpeg
