@@ -412,8 +412,9 @@ if build "cmake" "3.22.0"; then
   build_done "cmake" "3.22.0"
 fi
 
-originalCFlags=${CFLAGS}
+#originalCFlags=${CFLAGS}
 export CFLAGS="-fPIC ${CFLAGS}"
+export LDFLAGS="-fPIC ${LDFLAGS}"
 
 ##
 ## video library
@@ -629,7 +630,7 @@ fi
 ## HWaccel library
 ##
 
-export CFLAGS=${originalCFlags}
+#export CFLAGS=${originalCFlags}
 
 ##
 ## FFmpeg
@@ -643,6 +644,10 @@ fi
 build "ffmpeg" "$FFMPEG_VERSION"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
+sed -i -e "s/extern const URLProtocol ff_libzmq_protocol;/extern const URLProtocol ff_libzmq_protocol;\nextern const URLProtocol ff_unitybuf_protocol;/g" "libavformat/protocols.c"
+sed -i -e "s/version.h/version.h unitybuf.h/g" "libavformat/Makefile"
+sed -i -e "s/OBJS-\$(CONFIG_UNIX_PROTOCOL)             += unix.o/OBJS-\$(CONFIG_UNIX_PROTOCOL)             += unix.o\nOBJS-\$(CONFIG_UNITYBUF_PROTOCOL)         += unitybuf.o unitybuf_protocol.o/g" "libavformat/Makefile"
+cp -f "../../unitybuf/"* "libavformat"
 ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
   --disable-doc \
@@ -657,7 +662,7 @@ download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VE
   --extra-libs="${EXTRALIBS}" \
   --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
   --pkg-config-flags="--static" \
-  --prefix="${WORKSPACE}" \
+  --prefix="${WORKSPACE}/ffmpeg" \
   --extra-version="${EXTRA_VERSION}"
 
 execute make -j $MJOBS
