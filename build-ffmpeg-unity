@@ -649,22 +649,41 @@ sed -i -e "s/extern const URLProtocol ff_libzmq_protocol;/extern const URLProtoc
 sed -i -e "s/version.h/version.h unitybuf.h/g" "libavformat/Makefile"
 sed -i -e "s/OBJS-\$(CONFIG_UNIX_PROTOCOL)             += unix.o/OBJS-\$(CONFIG_UNIX_PROTOCOL)             += unix.o\nOBJS-\$(CONFIG_UNITYBUF_PROTOCOL)         += unitybuf.o unitybuf_protocol.o/g" "libavformat/Makefile"
 cp -f "../../unitybuf/"* "libavformat"
-./configure "${CONFIGURE_OPTIONS[@]}" \
-  --disable-debug \
-  --disable-doc \
-  --enable-shared \
-  --enable-pthreads \
-  --disable-static \
-  --enable-small \
-  --enable-version3 \
-  --extra-cflags="${CFLAGS}" \
-  --extra-ldexeflags="${LDEXEFLAGS}" \
-  --extra-ldflags="${LDFLAGS}" \
-  --extra-libs="${EXTRALIBS}" \
-  --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
-  --pkg-config-flags="--static" \
-  --prefix="${WORKSPACE}/ffmpeg" \
-  --extra-version="${EXTRA_VERSION}"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  ./configure "${CONFIGURE_OPTIONS[@]}" \
+    --disable-debug \
+    --disable-doc \
+    --enable-shared \
+    --enable-pthreads \
+    --disable-static \
+    --enable-small \
+    --enable-version3 \
+    --extra-cflags="${CFLAGS}" \
+    --extra-ldexeflags="${LDEXEFLAGS}" \
+    --extra-ldflags="${LDFLAGS}" \
+    --extra-libs="${EXTRALIBS}" \
+    --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
+    --pkg-config-flags="--static" \
+    --prefix="${WORKSPACE}/ffmpeg" \
+    --extra-version="${EXTRA_VERSION}"
+else
+  ./configure "${CONFIGURE_OPTIONS[@]}" \
+    --disable-debug \
+    --disable-doc \
+    --disable-shared \
+    --enable-pthreads \
+    --enable-static \
+    --enable-small \
+    --enable-version3 \
+    --extra-cflags="${CFLAGS}" \
+    --extra-ldexeflags="${LDEXEFLAGS}" \
+    --extra-ldflags="${LDFLAGS}" \
+    --extra-libs="${EXTRALIBS}" \
+    --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
+    --pkg-config-flags="--static" \
+    --prefix="${WORKSPACE}/ffmpeg" \
+    --extra-version="${EXTRA_VERSION}"
+fi
 
 execute make -j $MJOBS
 execute make install
