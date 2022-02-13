@@ -409,7 +409,7 @@ else
     execute ./configure --prefix="${WORKSPACE}" --with-pic --enable-static --disable-assembly --disable-shared --disable-fast-install --disable-maintainer-mode
     execute make -j $MJOBS
     execute make install
-    build_done "gmp"
+    build_done "gmp" "6.2.1"
   fi
   CONFIGURE_OPTIONS+=("--enable-gmp")
   if build "nettle" "3.4.1"; then
@@ -417,8 +417,10 @@ else
     execute ./configure --prefix="${WORKSPACE}" --enable-pic --enable-static --disable-shared --enable-mini-gmp --disable-assembler --disable-openssl --disable-gcov --disable-documentation
     execute make -j $MJOBS
     execute make install
-    execute cp -rf "${WORKSPACE}/lib64"/* "${WORKSPACE}/lib"
-    build_done "nettle"
+    if [ -e "${WORKSPACE}/lib64" ]; then
+      execute cp -rf "${WORKSPACE}/lib64"/* "${WORKSPACE}/lib"
+    fi
+    build_done "nettle" "3.4.1"
   fi
   if build "gnutls" "3.6.16"; then
     download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.6.16.tar.xz"
@@ -431,7 +433,7 @@ else
     execute ./configure --prefix="${WORKSPACE}" --with-pic --with-included-libtasn1 --with-included-unistring --without-idn --without-p11-kit --enable-hardware-acceleration --enable-static --disable-openssl-compatibility --disable-shared --disable-fast-install --disable-code-coverage --disable-doc --disable-manpages --disable-guile --disable-tests --disable-tools --disable-maintainer-mode --disable-full-test-suite
     execute make -j $MJOBS
     execute make install
-    build_done "gnutls"
+    build_done "gnutls" "3.6.16"
   fi
   CONFIGURE_OPTIONS+=("--enable-gnutls")
 fi
@@ -443,10 +445,6 @@ if build "cmake" "3.22.0"; then
   execute make install
   build_done "cmake" "3.22.0"
 fi
-
-#originalCFlags=${CFLAGS}
-#export CFLAGS="-fPIC ${CFLAGS}"
-#export LDFLAGS="-fPIC ${LDFLAGS}"
 
 ##
 ## video library
@@ -662,8 +660,6 @@ fi
 ## HWaccel library
 ##
 
-#export CFLAGS=${originalCFlags}
-
 ##
 ## FFmpeg
 ##
@@ -671,46 +667,28 @@ fi
 EXTRA_VERSION=""
 if [[ "$OSTYPE" == "darwin"* ]]; then
   EXTRA_VERSION="${FFMPEG_VERSION}"
+  EXTRALIBS+=" -framework Security "
 fi
 
 build "ffmpeg" "$FFMPEG_VERSION"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  ./configure "${CONFIGURE_OPTIONS[@]}" \
-    --disable-debug \
-    --disable-doc \
-    --enable-shared \
-    --enable-pthreads \
-    --disable-static \
-    --enable-small \
-    --enable-version3 \
-    --extra-cflags="${CFLAGS}" \
-    --extra-ldexeflags="${LDEXEFLAGS}" \
-    --extra-ldflags="${LDFLAGS}" \
-    --extra-libs="${EXTRALIBS}" \
-    --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
-    --pkg-config-flags="--static" \
-    --prefix="${WORKSPACE}/ffmpeg" \
-    --extra-version="${EXTRA_VERSION}"
-else
-  ./configure "${CONFIGURE_OPTIONS[@]}" \
-    --disable-debug \
-    --disable-doc \
-    --disable-shared \
-    --enable-pthreads \
-    --enable-static \
-    --enable-small \
-    --enable-version3 \
-    --extra-cflags="${CFLAGS}" \
-    --extra-ldexeflags="${LDEXEFLAGS}" \
-    --extra-ldflags="${LDFLAGS}" \
-    --extra-libs="${EXTRALIBS}" \
-    --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
-    --pkg-config-flags="--static" \
-    --prefix="${WORKSPACE}/ffmpeg" \
-    --extra-version="${EXTRA_VERSION}"
-fi
+./configure "${CONFIGURE_OPTIONS[@]}" \
+  --disable-debug \
+  --disable-doc \
+  --disable-shared \
+  --enable-pthreads \
+  --enable-static \
+  --enable-small \
+  --enable-version3 \
+  --extra-cflags="${CFLAGS}" \
+  --extra-ldexeflags="${LDEXEFLAGS}" \
+  --extra-ldflags="${LDFLAGS}" \
+  --extra-libs="${EXTRALIBS}" \
+  --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
+  --pkg-config-flags="--static" \
+  --prefix="${WORKSPACE}/ffmpeg" \
+  --extra-version="${EXTRA_VERSION}"
 
 execute make -j $MJOBS
 execute make install
