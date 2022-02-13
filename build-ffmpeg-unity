@@ -403,6 +403,37 @@ if $NONFREE_AND_GPL; then
   execute make install_sw
   build_done "openssl"
   CONFIGURE_OPTIONS+=("--enable-openssl")
+else
+  if build "gmp" "6.2.1"; then
+    download "https://gmplib.org/download/gmp/gmp-6.2.1.tar.xz"
+    execute ./configure --prefix="${WORKSPACE}" --with-pic --enable-static --disable-assembly --disable-shared --disable-fast-install --disable-maintainer-mode
+    execute make -j $MJOBS
+    execute make install
+    build_done "gmp"
+  fi
+  CONFIGURE_OPTIONS+=("--enable-gmp")
+  if build "nettle" "3.4.1"; then
+    download "https://ftp.gnu.org/gnu/nettle/nettle-3.4.1.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}" --enable-pic --enable-static --disable-shared --enable-mini-gmp --disable-assembler --disable-openssl --disable-gcov --disable-documentation
+    execute make -j $MJOBS
+    execute make install
+    execute cp -rf "${WORKSPACE}/lib64"/* "${WORKSPACE}/lib"
+    build_done "nettle"
+  fi
+  if build "gnutls" "3.6.16"; then
+    download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.6.16.tar.xz"
+    export NETTLE_CFLAGS="-I${WORKSPACE}/include"
+    export NETTLE_LIBS="-L${WORKSPACE}/lib -lnettle -lgmp"
+    export HOGWEED_CFLAGS="-I${WORKSPACE}/include"
+    export HOGWEED_LIBS="-L${WORKSPACE}/lib -lhogweed -lgmp"
+    export GMP_CFLAGS="-I${WORKSPACE}/include"
+    export GMP_LIBS="-L${WORKSPACE}/lib -lgmp"
+    execute ./configure --prefix="${WORKSPACE}" --with-pic --with-included-libtasn1 --with-included-unistring --without-idn --without-p11-kit --enable-hardware-acceleration --enable-static --disable-openssl-compatibility --disable-shared --disable-fast-install --disable-code-coverage --disable-doc --disable-manpages --disable-guile --disable-tests --disable-tools --disable-maintainer-mode --disable-full-test-suite
+    execute make -j $MJOBS
+    execute make install
+    build_done "gnutls"
+  fi
+  CONFIGURE_OPTIONS+=("--enable-gnutls")
 fi
 
 if build "cmake" "3.22.0"; then
@@ -414,8 +445,8 @@ if build "cmake" "3.22.0"; then
 fi
 
 #originalCFlags=${CFLAGS}
-export CFLAGS="-fPIC ${CFLAGS}"
-export LDFLAGS="-fPIC ${LDFLAGS}"
+#export CFLAGS="-fPIC ${CFLAGS}"
+#export LDFLAGS="-fPIC ${LDFLAGS}"
 
 ##
 ## video library
@@ -645,10 +676,6 @@ fi
 build "ffmpeg" "$FFMPEG_VERSION"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
 # shellcheck disable=SC2086
-sed -i -e "s/extern const URLProtocol ff_libzmq_protocol;/extern const URLProtocol ff_libzmq_protocol;\nextern const URLProtocol ff_unitybuf_protocol;/g" "libavformat/protocols.c"
-sed -i -e "s/version.h/version.h unitybuf.h/g" "libavformat/Makefile"
-sed -i -e "s/OBJS-\$(CONFIG_UNIX_PROTOCOL)             += unix.o/OBJS-\$(CONFIG_UNIX_PROTOCOL)             += unix.o\nOBJS-\$(CONFIG_UNITYBUF_PROTOCOL)         += unitybuf.o unitybuf_protocol.o/g" "libavformat/Makefile"
-cp -f "../../unitybuf/"* "libavformat"
 if [[ "$OSTYPE" == "darwin"* ]]; then
   ./configure "${CONFIGURE_OPTIONS[@]}" \
     --disable-debug \
