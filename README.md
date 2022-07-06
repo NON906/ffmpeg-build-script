@@ -20,7 +20,7 @@ These sources are out of control by the developers of this script. Also, this sc
 By downloading and using this script, you are fully aware of this.
 
 Use this script at your own risk. I maintain this script in my spare time. Please do not file bug reports for systems
-other than Debian 10 and macOS 11.x, because I don't have the resources or time to maintain different systems.
+other than Debian and macOS, because I don't have the resources or time to maintain different systems.
 
 ## Installation
 
@@ -122,6 +122,7 @@ with https://github.com/markus-perl/ffmpeg-build-script/actions to make sure eve
 ### Linux
 
 * Debian >= Buster, Ubuntu => Focal Fossa, other Distributions might work too
+* Rocky Linux 8
 * A development environment and curl is required
 
 ```bash
@@ -151,7 +152,7 @@ These builds are always built with the --enable-gpl-and-non-free switch, as CUDA
 ```bash
 export DOCKER_BUILDKIT=1
 
-## Set the DIST (`ubuntu` or `centos`) and VER (ubuntu: `16.04` , `18.04`, `20.04` or centos: `7`, `8`) environment variables to select the preferred Docker base image.
+## Set the DIST (`ubuntu` or `rocky`) and VER (ubuntu: `16.04` , `18.04`, `20.04` or rocky: `8`) environment variables to select the preferred Docker base image.
 $ export DIST=centos
 $ export VER=8
 
