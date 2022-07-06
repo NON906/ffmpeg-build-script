@@ -9,8 +9,9 @@ SCRIPT_VERSION=1.36
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
-CFLAGS="-I$WORKSPACE/include"
-LDFLAGS="-L$WORKSPACE/lib"
+CFLAGS="-I$WORKSPACE/include -fPIC"
+CPPFLAGS="$CFLAGS"
+LDFLAGS="-L$WORKSPACE/lib -fPIC"
 LDEXEFLAGS=""
 EXTRALIBS="-ldl -lpthread -lm -lz"
 MACOS_M1=false
@@ -425,11 +426,11 @@ else
   fi
   if build "gnutls" "3.6.16"; then
     download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.6.16.tar.xz"
-    export NETTLE_CFLAGS="-I${WORKSPACE}/include"
+    export NETTLE_CFLAGS="-I${WORKSPACE}/include -fPIC"
     export NETTLE_LIBS="-L${WORKSPACE}/lib -lnettle -lgmp"
-    export HOGWEED_CFLAGS="-I${WORKSPACE}/include"
+    export HOGWEED_CFLAGS="-I${WORKSPACE}/include -fPIC"
     export HOGWEED_LIBS="-L${WORKSPACE}/lib -lhogweed -lgmp"
-    export GMP_CFLAGS="-I${WORKSPACE}/include"
+    export GMP_CFLAGS="-I${WORKSPACE}/include -fPIC"
     export GMP_LIBS="-L${WORKSPACE}/lib -lgmp"
     execute ./configure --prefix="${WORKSPACE}" --with-pic --with-included-libtasn1 --with-included-unistring --without-idn --without-p11-kit --enable-hardware-acceleration --enable-static --disable-openssl-compatibility --disable-shared --disable-fast-install --disable-code-coverage --disable-doc --disable-manpages --disable-guile --disable-tests --disable-tools --disable-maintainer-mode --disable-full-test-suite
     execute make -j $MJOBS
@@ -481,7 +482,7 @@ if build "libvpx" "1.10.0"; then
     sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched >build/make/Makefile
   fi
 
-  execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --as=yasm --enable-vp9-highbitdepth
+  execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --as=yasm --enable-vp9-highbitdepth --enable-pic
   execute make -j $MJOBS
   execute make install
 
@@ -495,9 +496,9 @@ if build "av1" "ae2be80"; then
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
   if $MACOS_M1; then
-    execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 "$PACKAGES"/av1
+    execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 -DCMAKE_POSITION_INDEPENDENT_CODE=ON "$PACKAGES"/av1
   else
-    execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib "$PACKAGES"/av1
+    execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POSITION_INDEPENDENT_CODE=ON "$PACKAGES"/av1
   fi
   execute make -j $MJOBS
   execute make install
@@ -511,6 +512,10 @@ CONFIGURE_OPTIONS+=("--enable-libaom")
 ##
 
 if command_exists "python3"; then
+
+  export CFLAGS="$CFLAGS"
+  export CXXFLAGS="$CPPFLAGS"
+  export CPPFLAGS="$CPPFLAGS"
 
   if build "lv2" "1.18.2"; then
     download "https://lv2plug.in/spec/lv2-1.18.2.tar.bz2" "lv2-1.18.2.tar.bz2"
@@ -574,7 +579,7 @@ fi
 
 if build "opus" "1.3.1"; then
   download "https://archive.mozilla.org/pub/opus/opus-1.3.1.tar.gz"
-  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --with-pic
   execute make -j $MJOBS
   execute make install
 
@@ -631,9 +636,11 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-gl --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib
     make_dir build
     cd build || exit
-    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON ../
+    execute cmake -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON ../
     execute make -j $MJOBS
     execute make install
+
+    CPPFLAGS="$CFLAGS"
 
     build_done "libwebp" "1.2.1"
   fi
@@ -678,13 +685,20 @@ fi
 
 build "ffmpeg" "$FFMPEG_VERSION"
 download "https://github.com/FFmpeg/FFmpeg/archive/refs/heads/release/$FFMPEG_VERSION.tar.gz" "FFmpeg-release-$FFMPEG_VERSION.tar.gz"
+
+cp -f ../../unitybuf/* "./libavformat"
+grep -q "unitybuf" "./libavformat/Makefile"
+if [ $? != 0 ]; then
+  sed -i -e "s/version\.h/version\.h unitybuf\.h/" -e "s/unix\.o/unix\.o\nOBJS\-\$\(CONFIG_UNITYBUF_PROTOCOL\)         \+\= unitybuf\.o unitybuf_protocol\.o/" "./libavformat/Makefile"
+fi
+
 # shellcheck disable=SC2086
 ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
   --disable-doc \
-  --disable-shared \
+  --enable-shared \
   --enable-pthreads \
-  --enable-static \
+  --disable-static \
   --enable-small \
   --enable-version3 \
   --extra-cflags="${CFLAGS}" \
