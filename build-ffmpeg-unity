@@ -465,11 +465,11 @@ if command_exists "python3"; then
   fi
 fi
 
-if build "openh264"; then
-  download "https://github.com/cisco/openh264/archive/v2.1.1.tar.gz" "openh264-2.1.1.tar.gz"
+if build "openh264" "2.2.0"; then
+  download "https://github.com/cisco/openh264/archive/v2.2.0.tar.gz" "openh264-2.2.0.tar.gz"
   execute make -j $MJOBS PREFIX="${WORKSPACE}" 
   execute make install-static PREFIX="${WORKSPACE}" 
-  build_done "openh264"
+  build_done "openh264" "2.2.0"
 fi
 CONFIGURE_OPTIONS+=("--enable-libopenh264")
 
@@ -696,9 +696,9 @@ fi
 ./configure "${CONFIGURE_OPTIONS[@]}" \
   --disable-debug \
   --disable-doc \
-  --enable-shared \
+  --disable-shared \
   --enable-pthreads \
-  --disable-static \
+  --enable-static \
   --enable-small \
   --enable-version3 \
   --extra-cflags="${CFLAGS}" \
@@ -708,7 +708,10 @@ fi
   --pkgconfigdir="$WORKSPACE/lib/pkgconfig" \
   --pkg-config-flags="--static" \
   --prefix="${WORKSPACE}/ffmpeg" \
-  --extra-version="${EXTRA_VERSION}"
+  --extra-version="${EXTRA_VERSION}" \
+  --enable-pic
+
+#sed -i -e "s/SLIBNAME_WITH_VERSION\=.*/SLIBNAME_WITH_VERSION\=\$\(SLIBNAME\)/" -e "s/SLIBNAME_WITH_MAJOR\=.*/SLIBNAME_WITH_MAJOR\=\$\(SLIBNAME\)/" -e "s/SLIB_INSTALL_NAME\=.*/SLIB_INSTALL_NAME\=\$\(SLIBNAME\)/" -e "s/SLIB_INSTALL_LINKS\=.*/SLIB_INSTALL_LINKS\=/" "./ffbuild/config.mak"
 
 execute make -j $MJOBS
 execute make install
