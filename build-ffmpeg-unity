@@ -719,7 +719,9 @@ fi
   --pkg-config-flags="--static" \
   --prefix="${WORKSPACE}/ffmpeg" \
   --extra-version="${EXTRA_VERSION}" \
-  --enable-pic
+  --enable-pic \
+  --disable-sndio \
+  --disable-sdl2
 
 #sed -i -e "s/SLIBNAME_WITH_VERSION\=.*/SLIBNAME_WITH_VERSION\=\$\(SLIBNAME\)/" -e "s/SLIBNAME_WITH_MAJOR\=.*/SLIBNAME_WITH_MAJOR\=\$\(SLIBNAME\)/" -e "s/SLIB_INSTALL_NAME\=.*/SLIB_INSTALL_NAME\=\$\(SLIBNAME\)/" -e "s/SLIB_INSTALL_LINKS\=.*/SLIB_INSTALL_LINKS\=/" "./ffbuild/config.mak"
 
