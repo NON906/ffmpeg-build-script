@@ -5,7 +5,7 @@
 
 PROGNAME=$(basename "$0")
 FFMPEG_VERSION=5.1
-SCRIPT_VERSION=1.41
+SCRIPT_VERSION=1.43
 CWD=$(pwd)
 PACKAGES="$CWD/packages"
 WORKSPACE="$CWD/workspace"
@@ -231,8 +231,8 @@ while (($# > 0)); do
       bflag='-b'
     fi
     if [[ "$1" == "--enable-gpl-and-non-free" ]]; then
-      CONFIGURE_OPTIONS+=("--enable-nonfree")
-      CONFIGURE_OPTIONS+=("--enable-gpl")
+      #CONFIGURE_OPTIONS+=("--enable-nonfree")
+      #CONFIGURE_OPTIONS+=("--enable-gpl")
       NONFREE_AND_GPL=true
     fi
     if [[ "$1" == "--cleanup" || "$1" =~ '-c' && ! "$1" =~ '--' ]]; then
@@ -340,17 +340,18 @@ if build "yasm" "1.3.0"; then
   build_done "yasm" "1.3.0"
 fi
 
-if build "nasm" "2.15.05"; then
-  download "https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/nasm-2.15.05.tar.xz"
+if build "nasm" "2.16.01"; then
+  download "https://www.nasm.us/pub/nasm/releasebuilds/2.16.01/nasm-2.16.01.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
-  build_done "nasm" "2.15.05"
+  build_done "nasm" "2.16.01"
 fi
 
 if build "zlib" "1.2.13"; then
-  download "https://www.zlib.net/zlib-1.2.13.tar.gz"
+  download "https://zlib.net/fossils/zlib-1.2.13.tar.gz"
   execute ./configure --static --prefix="${WORKSPACE}"
+  #execute sed -i -e "s/CFLAGS=/CFLAGS=-fPIC /" -e "s/LDFLAGS=/LDFLAGS=-fPIC /" "./Makefile"
   execute make -j $MJOBS
   execute make install
   build_done "zlib" "1.2.13"
@@ -380,17 +381,17 @@ if build "automake" "1.16.5"; then
   build_done "automake" "1.16.5"
 fi
 
-if build "libtool" "2.4.6"; then
-  download "https://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz"
+if build "libtool" "2.4.7"; then
+  download "https://ftpmirror.gnu.org/libtool/libtool-2.4.7.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --enable-static --disable-shared
   execute make -j $MJOBS
   execute make install
-  build_done "libtool" "2.4.6"
+  build_done "libtool" "2.4.7"
 fi
 
 if $NONFREE_AND_GPL; then
-  if build "openssl" "1.1.1p"; then
-    download "https://www.openssl.org/source/openssl-1.1.1p.tar.gz"
+  if build "openssl" "1.1.1s"; then
+    download "https://www.openssl.org/source/openssl-1.1.1s.tar.gz"
     if $MACOS_M1; then
       sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n    inherit_from     => [ "darwin-common", asm("aarch64_asm") ],\n    CFLAGS           => add("-Wall"),\n    cflags           => add("-arch arm64 "),\n    lib_cppflags     => add("-DL_ENDIAN"),\n    bn_ops           => "SIXTY_FOUR_BIT_LONG", \n    perlasm_scheme   => "macosx", \n}, \n\1/g' Configurations/10-main.conf
       execute ./Configure --prefix="${WORKSPACE}" no-shared no-asm darwin64-arm64-cc
@@ -399,33 +400,31 @@ if $NONFREE_AND_GPL; then
     fi
     execute make -j $MJOBS
     execute make install_sw
-    build_done "openssl" "1.1.1p"
+    build_done "openssl" "1.1.1s"
   fi
-  execute make -j $MJOBS
-  execute make install_sw
-  build_done "openssl"
   CONFIGURE_OPTIONS+=("--enable-openssl")
 else
   if build "gmp" "6.2.1"; then
     download "https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.xz"
-    execute ./configure --prefix="${WORKSPACE}" --with-pic --enable-static --disable-assembly --disable-shared --disable-fast-install --disable-maintainer-mode
+    #execute ./configure --prefix="${WORKSPACE}" --with-pic --enable-static --disable-assembly --disable-shared --disable-fast-install --disable-maintainer-mode
+    execute ./configure --prefix="${WORKSPACE}" --with-pic
     execute make -j $MJOBS
     execute make install
     build_done "gmp" "6.2.1"
   fi
 
-  if build "nettle" "3.8"; then
-    download "https://ftp.gnu.org/gnu/nettle/nettle-3.8.tar.gz"
-    execute ./configure --prefix="${WORKSPACE}" --enable-pic --enable-static --disable-shared --enable-mini-gmp --disable-assembler --disable-openssl --disable-gcov --disable-documentation
+  if build "nettle" "3.8.1"; then
+    download "https://ftp.gnu.org/gnu/nettle/nettle-3.8.1.tar.gz"
+    execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-openssl --disable-documentation --libdir="${WORKSPACE}"/lib CPPFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
     execute make -j $MJOBS
     execute make install
     if [ -e "${WORKSPACE}/lib64" ]; then
       execute cp -rf "${WORKSPACE}/lib64"/* "${WORKSPACE}/lib"
     fi
-    build_done "nettle" "3.8"
+    build_done "nettle" "3.8.1"
   fi
-  if build "gnutls" "3.6.16"; then
-    download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.6.16.tar.xz"
+  if build "gnutls" "3.7.8"; then
+    download "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-3.7.8.tar.xz"
     export NETTLE_CFLAGS="-I${WORKSPACE}/include -fPIC"
     export NETTLE_LIBS="-L${WORKSPACE}/lib -lnettle -lgmp"
     export HOGWEED_CFLAGS="-I${WORKSPACE}/include -fPIC"
@@ -435,17 +434,17 @@ else
     execute ./configure --prefix="${WORKSPACE}" --with-pic --with-included-libtasn1 --with-included-unistring --without-idn --without-p11-kit --enable-hardware-acceleration --enable-static --disable-openssl-compatibility --disable-shared --disable-fast-install --disable-code-coverage --disable-doc --disable-manpages --disable-guile --disable-tests --disable-tools --disable-maintainer-mode --disable-full-test-suite
     execute make -j $MJOBS
     execute make install
-    build_done "gnutls" "3.6.16"
+    build_done "gnutls" "3.7.8"
   fi
   CONFIGURE_OPTIONS+=("--enable-gmp" "--enable-gnutls")
 fi
 
-if build "cmake" "3.23.1"; then
-  download "https://github.com/Kitware/CMake/releases/download/v3.23.1/cmake-3.23.1.tar.gz"
+if build "cmake" "3.25.1"; then
+  download "https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --parallel="${MJOBS}" -- -DCMAKE_USE_OPENSSL=OFF
   execute make -j $MJOBS
   execute make install
-  build_done "cmake" "3.23.1"
+  build_done "cmake" "3.25.1"
 fi
 
 ##
@@ -461,20 +460,24 @@ if command_exists "python3"; then
       if ! command_exists ${r}; then
         execute pip3 install ${r} --quiet --upgrade --no-cache-dir --disable-pip-version-check
       fi
+    export PATH=$PATH:~/Library/Python/3.9/bin
     done
   fi
 fi
 
-if build "openh264" "2.2.0"; then
-  download "https://github.com/cisco/openh264/archive/v2.2.0.tar.gz" "openh264-2.2.0.tar.gz"
-  execute make -j $MJOBS PREFIX="${WORKSPACE}" 
-  execute make install-static PREFIX="${WORKSPACE}" 
-  build_done "openh264" "2.2.0"
+if build "openh264"; then
+  download "https://github.com/cisco/openh264/archive/v2.3.1.tar.gz" "openh264-2.3.1.tar.gz"
+  execute make install-headers openh264.pc PREFIX="${WORKSPACE}" 
+  execute install -m 644 openh264.pc "${WORKSPACE}/lib/pkgconfig"
+  execute curl -o ./libopenh264-2.3.1-linux64.7.so.bz2 http://ciscobinary.openh264.org/libopenh264-2.3.1-linux64.7.so.bz2
+  execute bunzip2 libopenh264-2.3.1-linux64.7.so.bz2
+  execute cp libopenh264-2.3.1-linux64.7.so "${WORKSPACE}/lib/libopenh264.so"
+  build_done "openh264"
 fi
 CONFIGURE_OPTIONS+=("--enable-libopenh264")
 
-if build "libvpx" "1.10.0"; then
-  download "https://github.com/webmproject/libvpx/archive/refs/tags/v1.10.0.tar.gz" "libvpx-1.10.0.tar.gz"
+if build "libvpx" "1.12.0"; then
+  download "https://github.com/webmproject/libvpx/archive/refs/tags/v1.12.0.tar.gz" "libvpx-1.12.0.tar.gz"
 
   if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Applying Darwin patch"
@@ -482,28 +485,28 @@ if build "libvpx" "1.10.0"; then
     sed "s/-Wl,--no-undefined -Wl,-soname/-Wl,-undefined,error -Wl,-install_name/g" build/make/Makefile.patched >build/make/Makefile
   fi
 
-  execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --as=yasm --enable-vp9-highbitdepth --enable-pic
+  execute ./configure --prefix="${WORKSPACE}" --disable-unit-tests --disable-shared --disable-examples --as=yasm --enable-vp9-highbitdepth --enable-pic
   execute make -j $MJOBS
   execute make install
 
-  build_done "libvpx" "1.10.0"
+  build_done "libvpx" "1.12.0"
 fi
 CONFIGURE_OPTIONS+=("--enable-libvpx")
 
-if build "av1" "ae2be80"; then
-  # libaom ae2be80 == v3.1.2
-  download "https://aomedia.googlesource.com/aom/+archive/ae2be8030200925895fa6e98bd274ffdb595cbf6.tar.gz" "av1.tar.gz" "av1"
+if build "av1" "bcfe6fb"; then
+  # libaom bcfe6fb == v3.5.0
+  download "https://aomedia.googlesource.com/aom/+archive/bcfe6fbfed315f83ee8a95465c654ee8078dbff9.tar.gz" "av1.tar.gz" "av1"
   make_dir "$PACKAGES"/aom_build
   cd "$PACKAGES"/aom_build || exit
   if $MACOS_M1; then
-    execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 -DCMAKE_POSITION_INDEPENDENT_CODE=ON "$PACKAGES"/av1
+    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCONFIG_RUNTIME_CPU_DETECT=0 -DCMAKE_POSITION_INDEPENDENT_CODE=ON "$PACKAGES"/av1
   else
-    execute cmake -DENABLE_TESTS=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POSITION_INDEPENDENT_CODE=ON "$PACKAGES"/av1
+    execute cmake -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DCMAKE_INSTALL_PREFIX="${WORKSPACE}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_POSITION_INDEPENDENT_CODE=ON "$PACKAGES"/av1
   fi
   execute make -j $MJOBS
   execute make install
 
-  build_done "av1" "ae2be80"
+  build_done "av1" "bcfe6fb"
 fi
 CONFIGURE_OPTIONS+=("--enable-libaom")
 
@@ -517,59 +520,51 @@ if command_exists "python3"; then
   export CXXFLAGS="$CPPFLAGS"
   export CPPFLAGS="$CPPFLAGS"
 
-  if build "lv2" "1.18.2"; then
-    download "https://lv2plug.in/spec/lv2-1.18.2.tar.bz2" "lv2-1.18.2.tar.bz2"
-    execute python3 ./waf configure --prefix="${WORKSPACE}" --lv2-user
-    execute python3 ./waf
-    execute python3 ./waf install
-
-    build_done "lv2" "1.18.2"
+  if build "lv2" "1.18.10"; then
+    download "https://lv2plug.in/spec/lv2-1.18.10.tar.xz" "lv2-1.18.10.tar.xz"
+	execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+    execute ninja -C build
+    execute ninja -C build install
+    build_done "lv2" "1.18.10"
   fi
   if build "waflib" "b600c92"; then
     download "https://gitlab.com/drobilla/autowaf/-/archive/b600c928b221a001faeab7bd92786d0b25714bc8/autowaf-b600c928b221a001faeab7bd92786d0b25714bc8.tar.gz" "autowaf.tar.gz"
     build_done "waflib" "b600c92"
   fi
-  if build "serd" "0.30.10"; then
-    download "https://gitlab.com/drobilla/serd/-/archive/v0.30.10/serd-v0.30.10.tar.gz" "serd-v0.30.10.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/serd-v0.30.10/waflib/"
-    execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-posix
-    execute python3 ./waf
-    execute python3 ./waf install
-    build_done "serd" "0.30.10"
+  if build "serd" "0.30.16"; then
+    download "https://gitlab.com/drobilla/serd/-/archive/v0.30.16/serd-v0.30.16.tar.gz" "serd-v0.30.16.tar.gz"
+	execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+    execute ninja -C build
+    execute ninja -C build install
+    build_done "serd" "0.30.16"
   fi
   if build "pcre" "8.45"; then
     download "https://altushost-swe.dl.sourceforge.net/project/pcre/pcre/8.45/pcre-8.45.tar.gz" "pcre-8.45.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
     execute make -j $MJOBS
     execute make install
-
     build_done "pcre" "8.45"
   fi
-  if build "sord" "0.16.8"; then
-    download "https://gitlab.com/drobilla/sord/-/archive/v0.16.8/sord-v0.16.8.tar.gz" "sord-v0.16.8.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sord-v0.16.8/waflib/"
-    execute python3 ./waf configure --prefix="${WORKSPACE}" CFLAGS="${CFLAGS}" --static --no-shared --no-utils
-    execute python3 ./waf CFLAGS="${CFLAGS}"
-    execute python3 ./waf install
-
-    build_done "sord" "0.16.8"
+  if build "sord" "0.16.14"; then
+    download "https://gitlab.com/drobilla/sord/-/archive/v0.16.14/sord-v0.16.14.tar.gz" "sord-v0.16.14.tar.gz"
+	execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+    execute ninja -C build
+    execute ninja -C build install
+    build_done "sord" "0.16.14"
   fi
-  if build "sratom" "0.6.8"; then
-    download "https://gitlab.com/lv2/sratom/-/archive/v0.6.8/sratom-v0.6.8.tar.gz" "sratom-v0.6.8.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/sratom-v0.6.8/waflib/"
-    execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared
-    execute python3 ./waf
-    execute python3 ./waf install
-
-    build_done "sratom" "0.6.8"
+  if build "sratom" "0.6.14"; then
+    download "https://gitlab.com/lv2/sratom/-/archive/v0.6.14/sratom-v0.6.14.tar.gz" "sratom-v0.6.14.tar.gz"
+	execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+    execute ninja -C build
+    execute ninja -C build install
+    build_done "sratom" "0.6.14"
   fi
-  if build "lilv" "0.24.12"; then
-    download "https://gitlab.com/lv2/lilv/-/archive/v0.24.12/lilv-v0.24.12.tar.gz" "lilv-v0.24.12.tar.gz"
-    execute cp -r "${PACKAGES}"/autowaf/* "${PACKAGES}/lilv-v0.24.12/waflib/"
-    execute python3 ./waf configure --prefix="${WORKSPACE}" --static --no-shared --no-utils
-    execute python3 ./waf
-    execute python3 ./waf install
-    build_done "lilv" "0.24.12"
+  if build "lilv" "0.24.20"; then
+    download "https://gitlab.com/lv2/lilv/-/archive/v0.24.20/lilv-v0.24.20.tar.gz" "lilv-v0.24.20.tar.gz"
+  	execute meson build --prefix="${WORKSPACE}" --buildtype=release --default-library=static --libdir="${WORKSPACE}"/lib
+    execute ninja -C build
+    execute ninja -C build install
+    build_done "lilv" "0.24.20"
   fi
   CFLAGS+=" -I$WORKSPACE/include/lilv-0"
 
@@ -597,21 +592,21 @@ if build "opus" "1.3.1"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libopus")
 
-if build "libogg" "1.3.3"; then
-  download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-1.3.3.tar.gz"
+if build "libogg" "1.3.5"; then
+  download "https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-1.3.5.tar.xz"
   execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
   execute make -j $MJOBS
   execute make install
-  build_done "libogg" "1.3.3"
+  build_done "libogg" "1.3.5"
 fi
 
-if build "libvorbis" "1.3.6"; then
-  download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.6.tar.gz"
+if build "libvorbis" "1.3.7"; then
+  download "https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.7.tar.gz"
   execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest
   execute make -j $MJOBS
   execute make install
 
-  build_done "libvorbis" "1.3.6"
+  build_done "libvorbis" "1.3.7"
 fi
 CONFIGURE_OPTIONS+=("--enable-libvorbis")
 
@@ -620,11 +615,15 @@ if build "libtheora" "1.1.1"; then
   sed "s/-fforce-addr//g" configure >configure.patched
   chmod +x configure.patched
   mv configure.patched configure
+  
+  if ! $MACOS_M1; then
   ##BEGIN CONFIG.GUESS PATCH -- Updating config.guess file. Which allowed me to compile on aarch64 (ARMv8) [linux kernel 4.9 Ubuntu 20.04]
   rm config.guess
   curl -L --silent -o "config.guess" "https://raw.githubusercontent.com/gcc-mirror/gcc/master/config.guess"
   chmod +x config.guess
   ##END OF CONFIG.GUESS PATCH
+  fi
+  
   execute ./configure --prefix="${WORKSPACE}" --with-ogg-libraries="${WORKSPACE}"/lib --with-ogg-includes="${WORKSPACE}"/include/ --with-vorbis-libraries="${WORKSPACE}"/lib --with-vorbis-includes="${WORKSPACE}"/include/ --enable-static --disable-shared --disable-oggtest --disable-vorbistest --disable-examples --disable-asm --disable-spec
   execute make -j $MJOBS
   execute make install
@@ -639,10 +638,10 @@ CONFIGURE_OPTIONS+=("--enable-libtheora")
 
 ## does not compile on monterey -> _PrintGifError
 if [[ "$OSTYPE" != "darwin"* ]]; then
-  if build "libwebp" "1.2.1"; then
+  if build "libwebp" "1.2.2"; then
     # libwebp can fail to compile on Ubuntu if these flags were left set to CFLAGS
     CPPFLAGS=
-    download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.1.tar.gz" "libwebp-1.2.1.tar.gz"
+    download "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.2.2.tar.gz" "libwebp-1.2.2.tar.gz"
     execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static --disable-dependency-tracking --disable-gl --with-zlib-include="${WORKSPACE}"/include/ --with-zlib-lib="${WORKSPACE}"/lib
     make_dir build
     cd build || exit
@@ -652,7 +651,7 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
 
     CPPFLAGS="$CFLAGS"
 
-    build_done "libwebp" "1.2.1"
+    build_done "libwebp" "1.2.2"
   fi
   CONFIGURE_OPTIONS+=("--enable-libwebp")
 fi
@@ -661,8 +660,8 @@ fi
 ##
 
 if $NONFREE_AND_GPL; then
-  if build "srt" "1.4.3"; then
-    download "https://github.com/Haivision/srt/archive/v1.4.3.tar.gz" "srt-1.4.3.tar.gz"
+  if build "srt" "1.5.1"; then
+    download "https://github.com/Haivision/srt/archive/v1.5.1.tar.gz" "srt-1.5.1.tar.gz"
     export OPENSSL_ROOT_DIR="${WORKSPACE}"
     export OPENSSL_LIB_DIR="${WORKSPACE}"/lib
     export OPENSSL_INCLUDE_DIR="${WORKSPACE}"/include/
@@ -673,11 +672,20 @@ if $NONFREE_AND_GPL; then
       sed -i.backup 's/-lgcc_s/-lgcc_eh/g' "${WORKSPACE}"/lib/pkgconfig/srt.pc # The -i.backup is intended and required on MacOS: https://stackoverflow.com/questions/5694228/sed-in-place-flag-that-works-both-on-mac-bsd-and-linux
     fi
 
-    build_done "srt" "1.4.3"
+    build_done "srt" "1.5.1"
   fi
 
   CONFIGURE_OPTIONS+=("--enable-libsrt")
 fi
+
+if build "libxml2" "2.11.4"; then
+  download "https://download.gnome.org/sources/libxml2/2.11/libxml2-2.11.4.tar.xz"
+  execute ./configure --prefix="${WORKSPACE}" --with-ftp=no --with-http=no --with-python=no --enable-static --disable-shared
+  execute make -j $MJOBS
+  execute make install
+  build_done "libxml2" "2.11.4"
+fi
+CONFIGURE_OPTIONS+=("--enable-libxml2")
 
 ##
 ## HWaccel library
