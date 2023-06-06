@@ -460,19 +460,19 @@ if command_exists "python3"; then
       if ! command_exists ${r}; then
         execute pip3 install ${r} --quiet --upgrade --no-cache-dir --disable-pip-version-check
       fi
-    export PATH=$PATH:~/Library/Python/3.9/bin
     done
+    export PATH=$PATH:~/Library/Python/3.9/bin
   fi
 fi
 
-if build "openh264"; then
-  download "https://github.com/cisco/openh264/archive/v2.3.1.tar.gz" "openh264-2.3.1.tar.gz"
+if build "openh264" "2.2.0"; then
+  download "https://github.com/cisco/openh264/archive/v2.2.0.tar.gz" "openh264-2.2.0.tar.gz"
   execute make install-headers openh264.pc PREFIX="${WORKSPACE}" 
   execute install -m 644 openh264.pc "${WORKSPACE}/lib/pkgconfig"
-  execute curl -o ./libopenh264-2.3.1-linux64.7.so.bz2 http://ciscobinary.openh264.org/libopenh264-2.3.1-linux64.7.so.bz2
-  execute bunzip2 libopenh264-2.3.1-linux64.7.so.bz2
-  execute cp libopenh264-2.3.1-linux64.7.so "${WORKSPACE}/lib/libopenh264.so"
-  build_done "openh264"
+  execute curl -o ./libopenh264-2.2.0-linux64.6.so.bz2 http://ciscobinary.openh264.org/libopenh264-2.2.0-linux64.6.so.bz2
+  execute bunzip2 libopenh264-2.2.0-linux64.6.so.bz2
+  execute cp libopenh264-2.2.0-linux64.6.so "${WORKSPACE}/lib/libopenh264.so"
+  build_done "openh264" "2.2.0"
 fi
 CONFIGURE_OPTIONS+=("--enable-libopenh264")
 
