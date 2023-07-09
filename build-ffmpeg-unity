@@ -510,6 +510,16 @@ if build "av1" "bcfe6fb"; then
 fi
 CONFIGURE_OPTIONS+=("--enable-libaom")
 
+if build "nv-codec-headers" "12.0.16.0"; then
+  download "https://github.com/FFmpeg/nv-codec-headers/releases/download/n12.0.16.0/nv-codec-headers-12.0.16.0.tar.gz" "nv-codec-headers-12.0.16.0.tar.gz"
+  execute make install PREFIX="${WORKSPACE}"
+  build_done "nv-codec-headers" "12.0.16.0"
+fi
+CONFIGURE_OPTIONS+=("--enable-nvenc")
+CONFIGURE_OPTIONS+=("--enable-nvdec")
+CONFIGURE_OPTIONS+=("--enable-ffnvcodec")
+CONFIGURE_OPTIONS+=("--enable-cuvid")
+
 ##
 ## audio library
 ##
