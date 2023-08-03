@@ -665,6 +665,17 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
   fi
   CONFIGURE_OPTIONS+=("--enable-libwebp")
 fi
+
+if build "libzimg" "3.0.5"; then
+  download "https://github.com/sekrit-twc/zimg/archive/refs/tags/release-3.0.5.tar.gz" "libzimg-3.0.5.tar.gz"
+  execute ./autogen.sh
+  execute ./configure --prefix="${WORKSPACE}" --disable-shared --enable-static
+  execute make -j $MJOBS
+  execute make install
+  build_done "libzimg" "3.0.5"
+fi
+CONFIGURE_OPTIONS+=("--enable-libzimg")
+
 ##
 ## other library
 ##
